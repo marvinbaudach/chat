@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Claude Chat
 
-## Getting Started
+**Live demo → [klosterfrau123.github.io/chat](https://klosterfrau123.github.io/chat/)**
 
-First, run the development server:
+A minimal Claude chat interface with streaming, markdown rendering, and syntax highlighting. Bring your own Anthropic API key — it stays in your browser (localStorage), nothing is sent to any server.
+
+## Features
+
+- Token-by-token streaming with blinking cursor
+- Markdown rendering — headings, lists, blockquotes, inline code
+- Syntax-highlighted code blocks with copy button
+- Auto-resizing textarea (Enter to send, Shift+Enter for newline)
+- Stop button to abort a running stream
+- 6 frontend-focused starter prompts
+- API key stored in localStorage, never leaves the browser
+
+## Tech
+
+| | |
+|---|---|
+| LLM | Anthropic Claude (claude-sonnet-4-6) |
+| Streaming | `@anthropic-ai/sdk` with `dangerouslyAllowBrowser` |
+| Markdown | `react-markdown` + `remark-gfm` |
+| Highlighting | `react-syntax-highlighter` (Prism, oneDark) |
+| Framework | Next.js (App Router, static export) |
+| Language | TypeScript |
+| Hosting | GitHub Pages via GitHub Actions |
+
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [localhost:3000](http://localhost:3000) and enter your Anthropic API key.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build & Export
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build                    # local build
+GITHUB_PAGES=true npm run build  # static export for GitHub Pages (output: out/)
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── page.tsx          # entry point
+│   ├── layout.tsx        # metadata
+│   └── globals.css       # all styles
+├── components/
+│   ├── ChatApp.tsx       # root component, state, send/stream logic
+│   ├── ChatMessage.tsx   # message with markdown + syntax highlighting
+│   ├── ApiKeyGate.tsx    # key input screen
+│   └── StarterPrompts.tsx # preset prompt grid
+└── lib/
+    ├── stream.ts         # Anthropic streaming wrapper
+    └── prompts.ts        # starter prompt data
+```
