@@ -1,6 +1,6 @@
 # Claude Chat
 
-**Live demo → [klosterfrau123.github.io/chat](https://klosterfrau123.github.io/chat/)**
+**Live demo → [marvinbaudach.github.io/chat](https://marvinbaudach.github.io/chat/)**
 
 A minimal Claude chat interface with streaming, markdown rendering, and syntax highlighting. Bring your own Anthropic API key — it stays in your browser (localStorage), nothing is sent to any server.
 
