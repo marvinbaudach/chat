@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { ApiKeyGate }    from './ApiKeyGate';
 import { ChatMessage }   from './ChatMessage';
 import { StarterPrompts } from './StarterPrompts';
-import { streamChat, type Message } from '@/lib/stream';
+import { streamChat, CHAT_MODEL, type Message } from '@/lib/stream';
 
 const KEY_STORAGE = 'claude-chat-api-key';
 
@@ -48,15 +48,11 @@ export function ChatApp() {
 
     const userMsg: Message = { role: 'user', content: trimmed };
     const next = [...messages, userMsg];
-    setMessages(next);
+    setMessages([...next, { role: 'assistant', content: '' }]);
     setStreaming(true);
 
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-    const abort = await streamChat(
-      apiKey,
-      next,
-      token => setMessages(prev => {
+    abortRef.current = streamChat(apiKey, next, {
+      onToken: token => setMessages(prev => {
         const copy = [...prev];
         copy[copy.length - 1] = {
           ...copy[copy.length - 1],
@@ -64,13 +60,12 @@ export function ChatApp() {
         };
         return copy;
       }),
-      () => { setStreaming(false); abortRef.current = null; },
-      err  => { setError(err); setStreaming(false); abortRef.current = null; },
-    );
-    abortRef.current = abort;
+      onDone:  () => { setStreaming(false); abortRef.current = null; },
+      onError: err => { setError(err); setStreaming(false); abortRef.current = null; },
+    });
   }, [apiKey, messages, streaming]);
 
-  const stop = () => { abortRef.current?.(); setStreaming(false); };
+  const stop = () => { abortRef.current?.(); abortRef.current = null; setStreaming(false); };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); }
@@ -91,7 +86,7 @@ export function ChatApp() {
       <header className="chat__header">
         <span className="chat__title">CLAUDE CHAT</span>
         <div className="chat__header-right">
-          <span className="chat__model">claude-sonnet-4-6</span>
+          <span className="chat__model">{CHAT_MODEL}</span>
           <button className="chat__reset" onClick={resetKey} title="API-Key entfernen">⌫</button>
         </div>
       </header>

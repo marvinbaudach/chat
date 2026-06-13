@@ -5,41 +5,48 @@ export interface Message {
   content: string;
 }
 
-export async function streamChat(
+export interface StreamHandlers {
+  onToken: (token: string) => void;
+  onDone: () => void;
+  onError: (message: string) => void;
+}
+
+export const CHAT_MODEL = 'claude-sonnet-4-6';
+
+/**
+ * Streams a chat completion and returns an abort function synchronously, so the
+ * caller can cancel an in-flight request. The stream is consumed in the
+ * background; aborting rejects the underlying fetch, which we swallow.
+ */
+export function streamChat(
   apiKey: string,
   messages: Message[],
-  onToken: (token: string) => void,
-  onDone: () => void,
-  onError: (err: string) => void,
-): Promise<() => void> {
+  { onToken, onDone, onError }: StreamHandlers,
+): () => void {
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const controller = new AbortController();
 
-  let aborted = false;
-  const abort = () => { aborted = true; };
+  (async () => {
+    try {
+      const stream = client.messages.stream(
+        { model: CHAT_MODEL, max_tokens: 2048, messages },
+        { signal: controller.signal },
+      );
 
-  try {
-    const stream = await client.messages.stream({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      messages,
-    });
-
-    for await (const event of stream) {
-      if (aborted) break;
-      if (
-        event.type === 'content_block_delta' &&
-        event.delta.type === 'text_delta'
-      ) {
-        onToken(event.delta.text);
+      for await (const event of stream) {
+        if (
+          event.type === 'content_block_delta' &&
+          event.delta.type === 'text_delta'
+        ) {
+          onToken(event.delta.text);
+        }
       }
+      onDone();
+    } catch (e: unknown) {
+      if (controller.signal.aborted) return;
+      onError(e instanceof Error ? e.message : String(e));
     }
-    if (!aborted) onDone();
-  } catch (e: unknown) {
-    if (!aborted) {
-      const msg = e instanceof Error ? e.message : String(e);
-      onError(msg);
-    }
-  }
+  })();
 
-  return abort;
+  return () => controller.abort();
 }
